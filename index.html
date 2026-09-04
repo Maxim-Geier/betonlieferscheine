@@ -1,0 +1,1033 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --beton:#E3E4E1; --beton-tief:#CFD2CE; --papier:#FAFAF8; --stub:#F1F2EE;
+  --tinte:#191D21; --grau:#6B7278; --linie:#C7CBC6;
+  --signal:#14507A; --signal-tief:#0E3A5A;
+  --warn:#B36A10; --warn-bg:#FBF1DF; --warn-linie:#E5CFA3;
+  --stopp:#9A2B23; --stopp-bg:#F9EBEA; --stopp-linie:#E3BFBC;
+  --gut:#2C6E4B;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--beton);color:var(--tinte);font-family:var(--sans);
+  font-size:15px;line-height:1.45;padding-bottom:96px}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+button{font-family:inherit;font-size:15px;cursor:pointer;border:0}
+input,select,textarea{font-family:inherit;font-size:16px;color:var(--tinte);
+  background:var(--papier);border:1px solid var(--linie);border-radius:2px;padding:9px 10px;width:100%}
+input:focus,select:focus{outline:2px solid var(--signal);outline-offset:-1px;border-color:var(--signal)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+header{background:var(--tinte);color:#EDEFEC;padding:14px 16px 0}
+.kopfzeile{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.kopfzeile h1{font-size:16px;color:#fff}
+.bv{font-size:13px;color:#9AA3A9;max-width:52%;text-align:right;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.zaehler{display:flex;align-items:flex-end;gap:10px;padding:10px 0 14px}
+.zaehler .gross{font-family:var(--mono);font-size:44px;line-height:.9;font-weight:600;color:#fff;
+  font-variant-numeric:tabular-nums}
+.zaehler .einheit{font-size:15px;color:#9AA3A9;padding-bottom:3px}
+.zaehler .rechts{margin-left:auto;text-align:right;font-size:12px;color:#9AA3A9;line-height:1.5}
+nav{display:flex}
+nav button{flex:1;background:transparent;color:#9AA3A9;padding:11px 2px;font-size:12.5px;
+  border-bottom:3px solid transparent;white-space:nowrap}
+nav button.an{color:#fff;border-bottom-color:var(--signal)}
+nav button .b{font-family:var(--mono);opacity:.75;font-size:11px}
+nav button .b.rot{color:#E8A9A4;opacity:1}
+
+main{padding:16px;max-width:720px;margin:0 auto}
+.tab{display:none}.tab.an{display:block}
+
+.gross-knopf{display:block;width:100%;background:var(--signal);color:#fff;padding:20px 18px;
+  border-radius:3px;text-align:left;margin-bottom:10px}
+.gross-knopf:active{background:var(--signal-tief)}
+.gross-knopf .t{font-size:17px;font-weight:600;display:block}
+.gross-knopf .u{font-size:13px;opacity:.82;display:block;margin-top:3px}
+.zweit-knopf{display:block;width:100%;background:var(--papier);color:var(--tinte);
+  border:1px solid var(--linie);padding:15px 18px;border-radius:3px;text-align:left;margin-bottom:10px}
+.zweit-knopf:active{background:var(--stub)}
+.zweit-knopf .t{font-weight:600;display:block}
+.zweit-knopf .u{font-size:13px;color:var(--grau);display:block;margin-top:2px}
+.hinweis{font-size:13px;color:var(--grau);margin:18px 0 0;border-top:1px solid var(--linie);padding-top:12px}
+
+.zielwahl{background:var(--papier);border:1px solid var(--linie);border-radius:3px;padding:12px;margin-bottom:14px}
+.zielwahl .t{font-size:12px;color:var(--grau);margin-bottom:6px}
+.zielwahl select{margin-bottom:6px}
+
+.stub{display:flex;background:var(--papier);border:1px solid var(--linie);border-radius:2px;
+  margin-bottom:8px;overflow:hidden}
+.stub .rand{width:8px;background:var(--stub);border-right:1px dashed var(--linie);flex:none}
+.stub.fehlt .rand{background:var(--warn-bg);border-right-color:var(--warn)}
+.stub .bild{width:58px;flex:none;background:var(--beton-tief);object-fit:cover;align-self:stretch}
+.stub .inhalt{flex:1;padding:9px 11px;min-width:0}
+.stub .z1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.stub .lsnr{font-family:var(--mono);font-weight:600;font-size:15px}
+.stub .menge{font-family:var(--mono);font-weight:600;font-size:15px;white-space:nowrap}
+.stub .z2{font-size:13px;color:var(--grau);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stub select{font-size:13px;padding:5px 7px;margin-top:6px}
+.marke{display:inline-block;font-size:11px;padding:1px 6px;border-radius:2px;margin:4px 4px 0 0;
+  background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-linie)}
+.marke.neu{background:#E5EDF4;color:var(--signal);border-color:#BCD0E0}
+.marke.stopp{background:var(--stopp-bg);color:var(--stopp);border-color:var(--stopp-linie)}
+.leer{text-align:center;color:var(--grau);font-size:14px;padding:36px 20px;border:1px dashed var(--linie);border-radius:3px}
+.filter{display:flex;gap:8px;margin-bottom:12px}
+
+dialog{border:0;padding:0;width:100%;max-width:560px;background:var(--papier);border-radius:3px}
+dialog::backdrop{background:rgba(20,24,28,.72)}
+.d-kopf{position:sticky;top:0;background:var(--tinte);color:#fff;padding:12px 14px;display:flex;
+  justify-content:space-between;align-items:center;z-index:2}
+.d-kopf button{background:transparent;color:#fff;font-size:15px;padding:6px}
+.d-koerper{padding:14px;max-height:72vh;overflow:auto}
+.d-koerper img{width:100%;border:1px solid var(--linie);border-radius:2px;margin-bottom:14px;display:block}
+.feld{margin-bottom:10px}
+.feld label{display:block;font-size:12px;color:var(--grau);margin-bottom:3px}
+.feld.leer-wert input{border-color:var(--warn);background:var(--warn-bg)}
+.zwei{display:flex;gap:10px}.zwei>*{flex:1}
+.loeschen{background:transparent;color:var(--stopp);border:1px solid var(--stopp-linie);width:100%;
+  padding:11px;border-radius:2px;margin-top:6px}
+
+.block{background:var(--papier);border:1px solid var(--linie);border-radius:2px;padding:14px;margin-bottom:12px}
+.block h3{font-size:14px;margin-bottom:10px}
+.gewerk-kopf{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.gewerk-kopf input{font-weight:600}
+.mini{background:var(--stub);border:1px solid var(--linie);border-radius:2px;padding:9px 12px;
+  font-size:13px;white-space:nowrap}
+.bauteil{border-top:1px solid var(--linie);padding-top:10px;margin-top:10px}
+.bauteil .reihe{display:flex;gap:8px;margin-bottom:6px}
+.bauteil .reihe .w{flex:1}
+.bauteil .reihe .s{width:96px;flex:none}
+.klein{font-size:12px;color:var(--grau)}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;font-size:12px;color:var(--grau);padding:0 6px 6px 0;border-bottom:1px solid var(--linie)}
+td{padding:7px 6px 7px 0;border-bottom:1px solid var(--linie);vertical-align:middle}
+td.r,th.r{text-align:right;padding-right:0}
+td input{padding:6px 8px;text-align:right}
+.summe{display:flex;justify-content:space-between;padding:7px 0;font-size:14px}
+.summe.end{border-top:2px solid var(--tinte);margin-top:6px;padding-top:9px;font-weight:600;font-size:16px}
+.schalter{display:flex;align-items:flex-start;gap:10px;font-size:14px}
+.schalter input{width:20px;height:20px;flex:none;margin-top:2px}
+
+.befund{border:1px solid var(--linie);border-left:4px solid var(--grau);background:var(--papier);
+  border-radius:2px;padding:10px 12px;margin-bottom:7px}
+.befund.hoch{border-left-color:var(--stopp);background:var(--stopp-bg);border-color:var(--stopp-linie)}
+.befund.mittel{border-left-color:var(--warn);background:var(--warn-bg);border-color:var(--warn-linie)}
+.befund .kopf{font-weight:600;font-size:14px}
+.befund .txt{font-size:13.5px;color:#3A4147;margin-top:2px}
+.befund .bezug{font-size:12px;color:var(--grau);margin-top:4px}
+.ok{border:1px solid #BFD6C7;background:#EDF5F0;color:var(--gut);border-radius:2px;padding:14px;font-size:14px}
+.abw-plus{color:var(--stopp);font-weight:600}
+.abw-minus{color:var(--grau)}
+
+.leiste{position:fixed;left:0;right:0;bottom:0;background:var(--papier);border-top:1px solid var(--linie);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:5}
+.leiste button{flex:1;padding:14px;border-radius:3px;font-weight:600;background:var(--signal);color:#fff}
+.leiste button.sek{background:var(--stub);color:var(--tinte);border:1px solid var(--linie)}
+.leiste button[disabled]{opacity:.4}
+
+#kamera{position:fixed;inset:0;background:#000;z-index:20;display:none;flex-direction:column}
+#kamera video{flex:1;width:100%;object-fit:cover;min-height:0}
+.k-leiste{padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:#000;color:#fff;
+  display:flex;align-items:center;gap:14px}
+.k-leiste .ausloeser{width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid #666;flex:none;margin:0 auto}
+.k-leiste button.text{background:transparent;color:#fff;padding:10px;font-size:15px;width:74px}
+.k-auto{position:absolute;top:0;left:0;right:0;padding:10px 16px;background:linear-gradient(#000A,#0000);
+  color:#fff;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.k-auto label{display:flex;align-items:center;gap:7px}
+.k-auto input{width:18px;height:18px}
+.k-ziel{font-size:12px;color:#C8CDD1;padding:0 16px 10px;background:#000}
+
+#status{position:fixed;left:16px;right:16px;bottom:88px;background:var(--tinte);color:#fff;
+  padding:11px 14px;border-radius:3px;font-size:14px;z-index:10;display:none}
+</style>
+
+<header>
+  <div class="kopfzeile">
+    <h1>Betonlieferscheine</h1>
+    <div class="bv" id="bvKopf">Bauvorhaben eintragen</div>
+  </div>
+  <div class="zaehler">
+    <span class="gross" id="mengeGesamt">0,00</span><span class="einheit">m³</span>
+    <div class="rechts"><span id="anzahlScheine">0 Scheine</span><br><span id="zeitraum">–</span></div>
+  </div>
+  <nav>
+    <button data-tab="erfassen" class="an">Erfassen</button>
+    <button data-tab="scheine">Scheine <span class="b" id="navAnzahl">0</span></button>
+    <button data-tab="gewerke">Gewerke</button>
+    <button data-tab="pruefung">Prüfung <span class="b" id="navBefunde"></span></button>
+    <button data-tab="rechnung">Rechnung</button>
+  </nav>
+</header>
+
+<main>
+  <section class="tab an" id="tab-erfassen">
+    <div class="zielwahl">
+      <div class="t">Neue Scheine werden zugeordnet zu</div>
+      <select id="zielGewerk"></select>
+      <select id="zielBauteil"></select>
+      <div class="klein">Erkennt die App auf dem Schein ein bekanntes Bauteil, gewinnt der Schein.</div>
+    </div>
+    <button class="gross-knopf" onclick="kameraStarten()">
+      <span class="t">Scheine scannen</span>
+      <span class="u">Kamera läuft durch – Schein drunter, auslösen, nächster</span>
+    </button>
+    <button class="zweit-knopf" onclick="dateiAuswahl('foto')">
+      <span class="t">Foto aufnehmen</span><span class="u">Einzelaufnahme über die Kamera-App</span>
+    </button>
+    <button class="zweit-knopf" onclick="dateiAuswahl('bilder')">
+      <span class="t">Bilder aus der Galerie</span><span class="u">Mehrere Fotos auf einmal</span>
+    </button>
+    <button class="zweit-knopf" onclick="dateiAuswahl('pdf')">
+      <span class="t">PDF einfügen</span><span class="u">Jede Seite wird ein Lieferschein</span>
+    </button>
+    <p class="hinweis">Ausgelesen wird nur, was auf dem Schein steht. Nicht sicher lesbare Felder
+      bleiben leer und werden gelb markiert – nichts wird ergänzt oder geraten.</p>
+    <div class="block" style="margin-top:14px">
+      <h3>Zugang fürs Auslesen</h3>
+      <div class="feld"><label>Anthropic API-Key</label>
+        <input id="f_key" type="password" autocomplete="off" placeholder="sk-ant-..."></div>
+      <p class="klein" style="margin:0">Der Schlüssel bleibt nur in diesem Browser und wird nicht
+        mit hochgeladen. Erfassen, Prüfen, PDF und Excel funktionieren auch ohne – dann trägst du
+        die Werte selbst ein.</p>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-scheine">
+    <div class="filter"><select id="filterGewerk"></select></div>
+    <div id="scheinListe"></div>
+  </section>
+
+  <section class="tab" id="tab-gewerke">
+    <div id="gewerkListe"></div>
+    <button class="zweit-knopf" onclick="gewerkNeu()"><span class="t">Gewerk hinzufügen</span></button>
+    <p class="hinweis">Sollmenge und Soll-Betonsorte je Bauteil sind die Grundlage für die Prüfung.
+      Leer lassen, wenn nichts vorgegeben ist – dann wird dieser Punkt nicht geprüft.</p>
+  </section>
+
+  <section class="tab" id="tab-pruefung">
+    <div id="befunde"></div>
+    <div class="block">
+      <h3>Soll-Ist je Bauteil</h3>
+      <div id="sollIst"></div>
+    </div>
+    <div class="block">
+      <h3>Abgleich mit der Nachunternehmer-Rechnung</h3>
+      <p class="klein" style="margin:0 0 8px">Abgerechnete Menge je Sorte eintragen. Verglichen wird
+        mit der Summe der erfassten Lieferscheine.</p>
+      <table id="abgleich"><tbody></tbody></table>
+    </div>
+    <div class="block">
+      <h3>Prüfparameter</h3>
+      <div class="zwei">
+        <div class="feld"><label>Mehrmenge zulässig %</label><input id="p_tol" class="num" inputmode="decimal" style="text-align:right"></div>
+        <div class="feld"><label>Max. Unterbrechung Min.</label><input id="p_lueck" class="num" inputmode="decimal" style="text-align:right"></div>
+      </div>
+      <div class="feld"><label>Größte plausible Einzelmenge m³</label>
+        <input id="p_maxm" class="num" inputmode="decimal" style="text-align:right"></div>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-rechnung">
+    <div class="block">
+      <h3>Rechnungskopf</h3>
+      <div class="feld"><label>Bauvorhaben</label><input id="f_bv" placeholder="z. B. S453 Pumpenhaus"></div>
+      <div class="feld"><label>Auftraggeber</label><input id="f_ag"></div>
+      <div class="zwei">
+        <div class="feld"><label>Rechnungsnummer</label><input id="f_rnr"></div>
+        <div class="feld"><label>Rechnungsdatum</label><input id="f_rdat" placeholder="TT.MM.JJJJ"></div>
+      </div>
+    </div>
+    <div class="block">
+      <h3>Preise je Betonsorte</h3>
+      <table id="preisTabelle"><tbody></tbody></table>
+      <div id="summen"></div>
+    </div>
+    <div class="block">
+      <h3>Mengen je Gewerk</h3>
+      <div id="gewerkSummen"></div>
+    </div>
+    <div class="block">
+      <div class="schalter">
+        <input type="checkbox" id="f_13b">
+        <label for="f_13b">Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG) – keine
+          Umsatzsteuer ausweisen. Reine Betonlieferung ohne Einbau ist in der Regel <em>keine</em>
+          Bauleistung; im Zweifel prüfen.</label>
+      </div>
+      <div class="feld" style="margin-top:12px"><label>Umsatzsteuersatz %</label>
+        <input id="f_ust" class="num" inputmode="decimal" style="text-align:right"></div>
+    </div>
+  </section>
+</main>
+
+<div class="leiste" id="leiste"></div>
+<div id="status"></div>
+
+<div id="kamera">
+  <div style="position:relative;flex:1;display:flex;min-height:0">
+    <video id="video" playsinline muted></video>
+    <div class="k-auto">
+      <label><input type="checkbox" id="autoAn"> Automatisch alle 3 s auslösen</label>
+      <span class="num" id="kZaehler">0</span>
+    </div>
+  </div>
+  <div class="k-ziel" id="kZiel"></div>
+  <div class="k-leiste">
+    <button class="text" onclick="kameraStoppen()">Fertig</button>
+    <button class="ausloeser" onclick="aufnehmen()" aria-label="Aufnehmen"></button>
+    <span class="text"></span>
+  </div>
+</div>
+
+<input type="file" id="dateiInput" style="display:none">
+<dialog id="detail"></dialog>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const FELDER = [
+  ["lsnr","Lieferschein-Nr."],["datum","Datum"],["uhrzeit","Uhrzeit"],
+  ["menge","Menge m³"],["sorte","Betonsorte / Festigkeit"],["expo","Expositionsklassen"],
+  ["konsistenz","Konsistenz"],["korn","Größtkorn"],["werk","Lieferwerk / Lieferant"],
+  ["fahrzeug","Fahrzeug / Kennzeichen"],["bauteil","Bauteil laut Schein"],["bemerkung","Bemerkung"]
+];
+
+let S = {
+  scheine:[], kopf:{bv:"",ag:"",rnr:"",rdat:""}, preise:{}, ust:"19", u13b:false,
+  gewerke:[
+    {id:"g1", name:"Halle 5", bauteile:[]},
+    {id:"g2", name:"EAF Halle", bauteile:[]}
+  ],
+  ziel:{g:"g1", b:""}, filter:"", abgleich:{},
+  param:{tol:"8", lueck:"45", maxm:"10"}
+};
+let aktiverTab="erfassen", stream=null, autoTimer=null, kSession=0, sortenSchluessel="";
+
+const $ = id=>document.getElementById(id);
+const esc = t=>String(t??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+function status(t,d){ const el=$("status"); el.textContent=t; el.style.display="block";
+  clearTimeout(el._t); if(d!==0) el._t=setTimeout(()=>el.style.display="none", d||2600); }
+function statusAus(){ $("status").style.display="none"; }
+function zahl(v){ const n=parseFloat(String(v??"").replace(",",".")); return isFinite(n)?n:0; }
+function hatZahl(v){ return String(v??"").trim()!=="" && isFinite(parseFloat(String(v).replace(",","."))); }
+function fmt(n,d=2){ return (isFinite(n)?n:0).toLocaleString("de-DE",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function neuId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function dSort(s){ const m=/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/.exec(s.datum||""); if(!m) return "";
+  const j=m[3].length===2?"20"+m[3]:m[3]; return j+m[2].padStart(2,"0")+m[1].padStart(2,"0")+(s.uhrzeit||""); }
+function datumObj(t){ const m=/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/.exec(t||""); if(!m) return null;
+  const j=m[3].length===2?"20"+m[3]:m[3]; const d=new Date(+j,+m[2]-1,+m[1]);
+  return isNaN(d)?null:d; }
+function minuten(t){ const m=/^(\d{1,2})[:.](\d{2})/.exec(String(t||"").trim()); return m? (+m[1])*60+(+m[2]) : null; }
+function gewerk(gid){ return S.gewerke.find(g=>g.id===gid); }
+function bauteil(gid,bid){ const g=gewerk(gid); return g? g.bauteile.find(b=>b.id===bid) : null; }
+function pfad(s){
+  const g=gewerk(s.gewerkId), b=bauteil(s.gewerkId,s.bauteilId);
+  if(!g) return ""; return b? g.name+" › "+b.name : g.name;
+}
+
+/* ---------- Speicher ---------- */
+let db=null;
+function dbOeffnen(){
+  return new Promise(res=>{
+    const a=indexedDB.open("betonlieferscheine",1);
+    a.onupgradeneeded=()=>a.result.createObjectStore("bilder");
+    a.onsuccess=()=>{ db=a.result; res(db); };
+    a.onerror=()=>res(null);
+  });
+}
+function idbSet(k,v){ return new Promise(res=>{ if(!db) return res();
+  const t=db.transaction("bilder","readwrite"); t.objectStore("bilder").put(v,k); t.oncomplete=res; t.onerror=res; }); }
+function idbGet(k){ return new Promise(res=>{ if(!db) return res(null);
+  const r=db.transaction("bilder","readonly").objectStore("bilder").get(k);
+  r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null); }); }
+function idbDel(k){ if(!db) return; db.transaction("bilder","readwrite").objectStore("bilder").delete(k); }
+
+let sTimer=null;
+function speichern(){ clearTimeout(sTimer); sTimer=setTimeout(schreiben,400); }
+function schreiben(){
+  const schlank = S.scheine.map(s=>({...s, bild:null, thumb:null}));
+  try{ localStorage.setItem("bl_v2", JSON.stringify({...S, scheine:schlank})); }
+  catch(e){ status("Speichern fehlgeschlagen – Browserspeicher voll."); }
+}
+async function bildSpeichern(s){ await idbSet(s.id, s.bild); }
+async function laden(){
+  await dbOeffnen();
+  const r=localStorage.getItem("bl_v2");
+  if(r){ try{ Object.assign(S, JSON.parse(r)); }catch(e){} }
+  for(const s of S.scheine){ const b=await idbGet(s.id); if(b) s.bild=s.thumb=b; }
+}
+
+/* ---------- Gewerke / Bauteile ---------- */
+function gewerkNeu(){
+  S.gewerke.push({id:neuId(), name:"Neues Gewerk", bauteile:[]});
+  gewerkeZeichnen(); auswahlenFuellen(); speichern();
+}
+function gewerkLoeschen(gid){
+  if(S.scheine.some(s=>s.gewerkId===gid)){ status("Gewerk hat zugeordnete Scheine – erst umhängen."); return; }
+  S.gewerke = S.gewerke.filter(g=>g.id!==gid);
+  gewerkeZeichnen(); auswahlenFuellen(); speichern();
+}
+function bauteilNeu(gid){
+  gewerk(gid).bauteile.push({id:neuId(), name:"", soll:"", sorte:""});
+  gewerkeZeichnen(); auswahlenFuellen(); speichern();
+}
+function bauteilLoeschen(gid,bid){
+  if(S.scheine.some(s=>s.bauteilId===bid)){ status("Bauteil hat zugeordnete Scheine – erst umhängen."); return; }
+  const g=gewerk(gid); g.bauteile=g.bauteile.filter(b=>b.id!==bid);
+  gewerkeZeichnen(); auswahlenFuellen(); speichern();
+}
+function gewerkeZeichnen(){
+  $("gewerkListe").innerHTML = S.gewerke.map(g=>{
+    const ist = S.scheine.filter(s=>s.gewerkId===g.id).reduce((a,s)=>a+zahl(s.menge),0);
+    return `<div class="block">
+      <div class="gewerk-kopf">
+        <input value="${esc(g.name)}" oninput="gewerk('${g.id}').name=this.value;kopfAktualisieren();speichern()">
+        <button class="mini" onclick="gewerkLoeschen('${g.id}')">Löschen</button>
+      </div>
+      <div class="klein">${g.bauteile.length} Bauteile · ${fmt(ist)} m³ erfasst</div>
+      ${g.bauteile.map(b=>`<div class="bauteil">
+        <div class="reihe"><input class="w" placeholder="Bauteil, z. B. Fundament Achse 3"
+            value="${esc(b.name)}" oninput="bauteil('${g.id}','${b.id}').name=this.value;speichern()">
+          <button class="mini" onclick="bauteilLoeschen('${g.id}','${b.id}')">×</button></div>
+        <div class="reihe">
+          <input class="s num" style="text-align:right" inputmode="decimal" placeholder="Soll m³"
+            value="${esc(b.soll)}" oninput="bauteil('${g.id}','${b.id}').soll=this.value;speichern()">
+          <input class="w" placeholder="Soll-Betonsorte" value="${esc(b.sorte)}"
+            oninput="bauteil('${g.id}','${b.id}').sorte=this.value;speichern()">
+        </div></div>`).join("")}
+      <div class="bauteil"><button class="mini" style="width:100%"
+        onclick="bauteilNeu('${g.id}')">Bauteil hinzufügen</button></div>
+    </div>`;
+  }).join("");
+}
+function optionen(gid, bid, leerText){
+  let h=`<option value="">${leerText}</option>`;
+  S.gewerke.forEach(g=>{
+    h+=`<option value="${g.id}|" ${gid===g.id&&!bid?"selected":""}>${esc(g.name)} – ohne Bauteil</option>`;
+    g.bauteile.forEach(b=>{
+      h+=`<option value="${g.id}|${b.id}" ${gid===g.id&&bid===b.id?"selected":""}>&nbsp;&nbsp;${esc(g.name)} › ${esc(b.name||"unbenannt")}</option>`;
+    });
+  });
+  return h;
+}
+function auswahlenFuellen(){
+  const zg=$("zielGewerk"), zb=$("zielBauteil");
+  zg.innerHTML = S.gewerke.map(g=>`<option value="${g.id}" ${S.ziel.g===g.id?"selected":""}>${esc(g.name)}</option>`).join("");
+  const g = gewerk(S.ziel.g) || S.gewerke[0];
+  if(g) S.ziel.g=g.id;
+  zb.innerHTML = `<option value="">Bauteil offen lassen</option>` +
+    (g? g.bauteile.map(b=>`<option value="${b.id}" ${S.ziel.b===b.id?"selected":""}>${esc(b.name||"unbenannt")}</option>`).join("") : "");
+  $("filterGewerk").innerHTML = `<option value="">Alle Gewerke</option>` +
+    S.gewerke.map(g=>`<option value="${g.id}" ${S.filter===g.id?"selected":""}>${esc(g.name)}</option>`).join("") +
+    `<option value="__ohne" ${S.filter==="__ohne"?"selected":""}>Ohne Zuordnung</option>`;
+  zielText();
+}
+function zielText(){
+  const g=gewerk(S.ziel.g), b=bauteil(S.ziel.g,S.ziel.b);
+  $("kZiel").textContent = "Ziel: " + (g? g.name + (b? " › "+b.name : " (Bauteil offen)") : "kein Gewerk");
+}
+
+/* ---------- Eingabe ---------- */
+function dateiAuswahl(art){
+  const i=$("dateiInput");
+  i.value=""; i.removeAttribute("capture");
+  if(art==="pdf"){ i.accept="application/pdf"; i.multiple=true; }
+  else { i.accept="image/*"; i.multiple = art==="bilder"; if(art==="foto") i.setAttribute("capture","environment"); }
+  i.onchange = async ()=>{
+    const dateien=[...i.files]; if(!dateien.length) return;
+    status("Wird eingelesen …",0);
+    for(const d of dateien){
+      if(d.type==="application/pdf") await pdfEinlesen(d);
+      else await bildHinzu(await verkleinern(d));
+    }
+    statusAus(); zeichnen(); wechseln("scheine"); speichern();
+  };
+  i.click();
+}
+async function verkleinern(quelle,max=1600,q=.72){
+  const bmp=await createImageBitmap(quelle);
+  const f=Math.min(1,max/Math.max(bmp.width,bmp.height));
+  const c=document.createElement("canvas");
+  c.width=Math.round(bmp.width*f); c.height=Math.round(bmp.height*f);
+  c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+  bmp.close&&bmp.close();
+  return c.toDataURL("image/jpeg",q);
+}
+async function pdfEinlesen(datei){
+  const pdf = await pdfjsLib.getDocument({data:await datei.arrayBuffer()}).promise;
+  for(let n=1;n<=pdf.numPages;n++){
+    status(`PDF-Seite ${n} von ${pdf.numPages} …`,0);
+    const seite=await pdf.getPage(n), basis=seite.getViewport({scale:1});
+    const vp=seite.getViewport({scale:Math.min(2.2,1600/Math.max(basis.width,basis.height))});
+    const c=document.createElement("canvas");
+    c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+    await seite.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
+    await bildHinzu(c.toDataURL("image/jpeg",.75), datei.name+" S."+n);
+  }
+}
+async function bildHinzu(dataUrl, herkunft){
+  const s={id:neuId(), bild:dataUrl, thumb:dataUrl, herkunft:herkunft||"", gelesen:false,
+    gewerkId:S.ziel.g||"", bauteilId:S.ziel.b||""};
+  FELDER.forEach(([k])=>s[k]="");
+  S.scheine.push(s); bildSpeichern(s);
+}
+
+/* ---------- Kamera ---------- */
+async function kameraStarten(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},
+      width:{ideal:1920},height:{ideal:1440}},audio:false});
+  }catch(e){ status("Kamera hier nicht freigegeben – nimm „Foto aufnehmen“.",4000); return; }
+  kSession=0; $("kZaehler").textContent="0"; zielText();
+  $("video").srcObject=stream; await $("video").play();
+  $("kamera").style.display="flex"; $("autoAn").checked=false;
+  $("autoAn").onchange = e=>{ clearInterval(autoTimer); if(e.target.checked) autoTimer=setInterval(aufnehmen,3000); };
+}
+async function aufnehmen(){
+  const v=$("video"); if(!v.videoWidth) return;
+  const c=document.createElement("canvas");
+  const f=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));
+  c.width=Math.round(v.videoWidth*f); c.height=Math.round(v.videoHeight*f);
+  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+  await bildHinzu(c.toDataURL("image/jpeg",.75));
+  kSession++; $("kZaehler").textContent=kSession;
+  navigator.vibrate&&navigator.vibrate(35);
+}
+function kameraStoppen(){
+  clearInterval(autoTimer);
+  stream&&stream.getTracks().forEach(t=>t.stop());
+  stream=null; $("kamera").style.display="none";
+  zeichnen(); speichern(); if(kSession) wechseln("scheine");
+}
+
+/* ---------- Auslesen ---------- */
+const PROMPT = `Du liest einen Beton-Lieferschein (Transportbeton, Deutschland).
+Gib AUSSCHLIESSLICH ein JSON-Objekt zurück, ohne Markdown, ohne Erklärung, mit genau diesen Schlüsseln:
+{"lsnr":"","datum":"","uhrzeit":"","menge":"","sorte":"","expo":"","konsistenz":"","korn":"","werk":"","fahrzeug":"","bauteil":"","bemerkung":""}
+
+Regeln:
+- Nur übernehmen, was tatsächlich auf dem Schein steht. Nichts ergänzen, nichts schätzen, nichts ableiten.
+- Feld nicht vorhanden oder nicht sicher lesbar: leerer String "".
+- datum als TT.MM.JJJJ, uhrzeit als HH:MM (Lade- bzw. Ausgabezeit im Werk, sonst die einzige vorhandene Uhrzeit).
+- menge: nur die Menge dieser Lieferung in m³, Zahl mit Punkt als Dezimaltrennzeichen, ohne Einheit. Nicht die kumulierte Gesamtmenge.
+- sorte: Festigkeitsklasse mit Zusatz, z. B. "C25/30" oder "C30/37 XC4 XD3".
+- expo: alle Expositionsklassen mit Leerzeichen getrennt. konsistenz z. B. F3. korn z. B. 16 mm.
+- werk: Lieferwerk/Lieferant. fahrzeug: Kennzeichen oder Fahrzeugnummer.
+- bauteil: Bauteil, Einbauort oder Verwendungszweck genau so, wie es auf dem Schein steht.
+- bemerkung: nur auffällige handschriftliche Zusätze (Wasserzugabe, Wartezeit, Rückgabemenge), sonst "".`;
+
+let API_KEY = localStorage.getItem("bl_key") || "";
+async function auslesen(){
+  const offen=S.scheine.filter(s=>!s.gelesen);
+  if(!offen.length){ status("Alles ausgelesen."); return; }
+  if(!API_KEY){ wechseln("erfassen"); status("Erst den API-Key unter „Erfassen“ eintragen.",4000);
+    $("f_key").focus(); return; }
+  for(let i=0;i<offen.length;i++){
+    status(`Schein ${i+1} von ${offen.length} wird ausgelesen …`,0);
+    try{ await einenAuslesen(offen[i]); }catch(e){ offen[i].fehler=true; console.error(e); }
+    zeichnen();
+  }
+  statusAus(); speichern();
+  const rest=S.scheine.filter(s=>s.fehler).length;
+  status(rest? `Fertig, ${rest} Schein(e) fehlgeschlagen – nochmal versuchen.` : "Fertig ausgelesen.");
+}
+async function einenAuslesen(s){
+  const r = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST", headers:{
+      "Content-Type":"application/json",
+      "x-api-key": API_KEY,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true"},
+    body: JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, messages:[{role:"user",content:[
+      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:s.bild.split(",")[1]}},
+      {type:"text",text:PROMPT}]}]})
+  });
+  const d=await r.json();
+  const txt=(d.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("");
+  const roh=txt.replace(/```json|```/g,"").trim();
+  const j=JSON.parse(roh.slice(roh.indexOf("{"),roh.lastIndexOf("}")+1));
+  FELDER.forEach(([k])=>{ if(typeof j[k]==="string"||typeof j[k]==="number") s[k]=String(j[k]).trim(); });
+  s.gelesen=true; s.fehler=false;
+  if(s.sorte && !(s.sorte in S.preise)) S.preise[s.sorte]="";
+  bauteilRaten(s);
+}
+function bauteilRaten(s){
+  const t=(s.bauteil||"").toLowerCase().replace(/[^a-z0-9äöüß]/g,"");
+  if(!t) return;
+  for(const g of S.gewerke) for(const b of g.bauteile){
+    const n=(b.name||"").toLowerCase().replace(/[^a-z0-9äöüß]/g,"");
+    if(n.length>3 && (t.includes(n)||n.includes(t))){ s.gewerkId=g.id; s.bauteilId=b.id; return; }
+  }
+}
+
+/* ---------- Prüfung ---------- */
+function pruefen(){
+  const f=[], tol=zahl(S.param.tol), lueck=zahl(S.param.lueck), maxm=zahl(S.param.maxm);
+  const liste=sortiert();
+  const zaehlung={}; liste.forEach(s=>{ if(s.lsnr) zaehlung[s.lsnr]=(zaehlung[s.lsnr]||0)+1; });
+
+  // Pflichtfelder, Zuordnung, Plausibilität je Schein
+  liste.forEach(s=>{
+    const fehlt=[];
+    if(!s.lsnr) fehlt.push("Nummer"); if(!s.datum) fehlt.push("Datum");
+    if(!s.uhrzeit) fehlt.push("Uhrzeit"); if(!hatZahl(s.menge)) fehlt.push("Menge");
+    if(!s.sorte) fehlt.push("Betonsorte");
+    if(fehlt.length) f.push({stufe:"hoch", kopf:"Pflichtangaben fehlen",
+      txt:"Nicht lesbar oder nicht erfasst: "+fehlt.join(", ")+". Nicht prüfbar, bis nachgetragen.",
+      bezug:kurz(s), sid:s.id});
+    if(!s.bauteilId) f.push({stufe:"mittel", kopf:"Keinem Bauteil zugeordnet",
+      txt:"Ohne Bauteil ist die Menge nicht gegen die Sollmenge prüfbar."+
+        (s.bauteil? ` Auf dem Schein steht: „${s.bauteil}“.`:""), bezug:kurz(s), sid:s.id});
+    if(s.lsnr && zaehlung[s.lsnr]>1) f.push({stufe:"hoch", kopf:"Lieferschein-Nummer doppelt",
+      txt:`Nummer ${s.lsnr} kommt ${zaehlung[s.lsnr]}-mal vor. Doppelerfassung oder Doppelabrechnung prüfen.`,
+      bezug:kurz(s), sid:s.id});
+    if(maxm && zahl(s.menge)>maxm) f.push({stufe:"mittel", kopf:"Menge über Fahrzeuggröße",
+      txt:`${fmt(zahl(s.menge))} m³ auf einem Schein, plausibel wären bis ${fmt(maxm)} m³. Kumulierte Menge statt Einzelmenge erfasst?`,
+      bezug:kurz(s), sid:s.id});
+    if(hatZahl(s.menge) && zahl(s.menge)<=0) f.push({stufe:"mittel", kopf:"Menge null oder negativ",
+      txt:"Rückgabe- oder Stornoschein? Gehört nicht ungeprüft in die Abrechnung.", bezug:kurz(s), sid:s.id});
+    const d=datumObj(s.datum);
+    if(d && d.getDay()===0) f.push({stufe:"info", kopf:"Lieferung an einem Sonntag",
+      txt:"Genehmigung und etwaige Zuschläge prüfen.", bezug:kurz(s), sid:s.id});
+    const b=bauteil(s.gewerkId,s.bauteilId);
+    if(b && b.sorte && s.sorte){
+      const a=b.sorte.toLowerCase().replace(/\s+/g,""), c=s.sorte.toLowerCase().replace(/\s+/g,"");
+      if(!c.includes(a.split("x")[0]) && !a.includes(c.split("x")[0]))
+        f.push({stufe:"hoch", kopf:"Betonsorte weicht vom Soll ab",
+          txt:`Geliefert ${s.sorte}, vorgesehen ${b.sorte}. Freigabe des Tragwerksplaners erforderlich, bevor die Menge abgerechnet wird.`,
+          bezug:kurz(s), sid:s.id});
+    }
+    if(b && b.sorte && s.expo){
+      const sollExpo=(b.sorte.match(/X[CDFAMS]\d?/gi)||[]).map(x=>x.toUpperCase());
+      const istExpo=(s.expo+" "+s.sorte).toUpperCase();
+      const fehlend=sollExpo.filter(x=>!istExpo.includes(x));
+      if(fehlend.length) f.push({stufe:"hoch", kopf:"Expositionsklasse nicht abgedeckt",
+        txt:`Auf dem Schein fehlt ${fehlend.join(", ")}. Der gelieferte Beton erfüllt die Vorgabe des Bauteils damit nicht nachweislich.`,
+        bezug:kurz(s), sid:s.id});
+    }
+  });
+
+  // Betonierunterbrechung je Bauteil und Tag
+  if(lueck){
+    const gruppen={};
+    liste.forEach(s=>{ if(!s.bauteilId||!s.datum||minuten(s.uhrzeit)===null) return;
+      (gruppen[s.bauteilId+"|"+s.datum] ||= []).push(s); });
+    Object.values(gruppen).forEach(arr=>{
+      arr.sort((a,b)=>minuten(a.uhrzeit)-minuten(b.uhrzeit));
+      for(let i=1;i<arr.length;i++){
+        const d=minuten(arr[i].uhrzeit)-minuten(arr[i-1].uhrzeit);
+        if(d>lueck) f.push({stufe:"mittel", kopf:"Lücke im Betoniervorgang",
+          txt:`${d} Minuten zwischen ${arr[i-1].uhrzeit} und ${arr[i].uhrzeit}. Ab ${lueck} Minuten droht eine kalte Fuge – Einbauprotokoll und Fugenausbildung prüfen.`,
+          bezug:pfad(arr[i])+" · "+arr[i].datum, sid:arr[i].id});
+      }
+    });
+  }
+
+  // Soll-Ist je Bauteil
+  S.gewerke.forEach(g=>g.bauteile.forEach(b=>{
+    if(!hatZahl(b.soll)) return;
+    const ist=S.scheine.filter(s=>s.bauteilId===b.id).reduce((a,s)=>a+zahl(s.menge),0);
+    const soll=zahl(b.soll); if(!ist) return;
+    const abw=(ist-soll)/soll*100;
+    if(abw>tol) f.push({stufe:"hoch", kopf:"Mehrmenge über Toleranz",
+      txt:`${fmt(ist)} m³ geliefert gegen ${fmt(soll)} m³ Soll, ${fmt(abw,1)} % darüber. Vor der Abrechnung klären: Mehreinbau, Verluste oder falsch zugeordnete Scheine.`,
+      bezug:g.name+" › "+b.name});
+    else if(abw<-10) f.push({stufe:"info", kopf:"Menge unter Soll",
+      txt:`${fmt(ist)} m³ von ${fmt(soll)} m³. Bauteil noch nicht fertig oder Scheine fehlen.`,
+      bezug:g.name+" › "+b.name});
+  }));
+
+  // Rechnungsabgleich
+  Object.entries(mengenNachSorte()).forEach(([k,m])=>{
+    const r=S.abgleich[k];
+    if(hatZahl(r) && Math.abs(zahl(r)-m)>0.01)
+      f.push({stufe:"hoch", kopf:"Rechnungsmenge weicht ab",
+        txt:`${k}: abgerechnet ${fmt(zahl(r))} m³, Lieferscheine ergeben ${fmt(m)} m³. Differenz ${fmt(zahl(r)-m)} m³.`,
+        bezug:"Rechnungsabgleich"});
+  });
+
+  const rang={hoch:0,mittel:1,info:2};
+  return f.sort((a,b)=>rang[a.stufe]-rang[b.stufe]);
+}
+function kurz(s){ return [s.lsnr||"ohne Nr.", s.datum, pfad(s)].filter(Boolean).join(" · "); }
+function mengenNachSorte(){
+  const n={}; S.scheine.forEach(s=>{ const k=s.sorte||"ohne Sortenangabe"; n[k]=(n[k]||0)+zahl(s.menge); });
+  return n;
+}
+function pruefungZeichnen(){
+  const f=pruefen();
+  const hoch=f.filter(x=>x.stufe==="hoch").length;
+  $("navBefunde").innerHTML = f.length? `<span class="b ${hoch?"rot":""}">${f.length}</span>` : "";
+  $("befunde").innerHTML = !S.scheine.length
+    ? `<div class="leer">Noch nichts zu prüfen.</div>`
+    : (!f.length ? `<div class="ok">Keine Auffälligkeiten. Pflichtangaben vollständig, keine doppelten
+        Nummern, Mengen und Sorten im Rahmen.</div>`
+      : f.map(x=>`<div class="befund ${x.stufe}" ${x.sid?`onclick="detailOeffnen('${x.sid}')"`:""}>
+          <div class="kopf">${esc(x.kopf)}</div><div class="txt">${esc(x.txt)}</div>
+          <div class="bezug">${esc(x.bezug||"")}</div></div>`).join(""));
+
+  const zeilen=[];
+  S.gewerke.forEach(g=>g.bauteile.forEach(b=>{
+    const ist=S.scheine.filter(s=>s.bauteilId===b.id).reduce((a,s)=>a+zahl(s.menge),0);
+    if(!ist && !hatZahl(b.soll)) return;
+    const soll=zahl(b.soll);
+    const abw = hatZahl(b.soll)&&soll ? (ist-soll)/soll*100 : null;
+    zeilen.push(`<tr><td>${esc(g.name)} › ${esc(b.name||"unbenannt")}</td>
+      <td class="r num">${hatZahl(b.soll)?fmt(soll):"–"}</td>
+      <td class="r num">${fmt(ist)}</td>
+      <td class="r num ${abw===null?"":(abw>0?"abw-plus":"abw-minus")}">${abw===null?"–":(abw>0?"+":"")+fmt(abw,1)+" %"}</td></tr>`);
+  }));
+  $("sollIst").innerHTML = zeilen.length
+    ? `<table><tr><th>Bauteil</th><th class="r">Soll m³</th><th class="r">Ist m³</th><th class="r">Abw.</th></tr>${zeilen.join("")}</table>`
+    : `<div class="klein">Noch keine Bauteile mit Mengen.</div>`;
+
+  const sorten=Object.entries(mengenNachSorte());
+  const tb=$("abgleich").querySelector("tbody");
+  tb.innerHTML = sorten.length
+    ? `<tr><th>Sorte</th><th class="r">Scheine m³</th><th class="r" style="width:96px">Rechnung m³</th><th class="r">Diff.</th></tr>`
+      + sorten.map(([k,m])=>{
+        const r=S.abgleich[k]; const d=hatZahl(r)? zahl(r)-m : null;
+        return `<tr><td>${esc(k)}</td><td class="r num">${fmt(m)}</td>
+          <td class="r"><input class="num" inputmode="decimal" value="${esc(r??"")}"
+            oninput="S.abgleich[${JSON.stringify(k).replace(/"/g,"&quot;")}]=this.value;speichern();abgleichAuffrischen()"></td>
+          <td class="r num ${d&&Math.abs(d)>0.01?"abw-plus":""}" data-diff="${esc(k)}">${d===null?"–":fmt(d)}</td></tr>`;
+      }).join("")
+    : `<tr><td class="klein" style="border:0">Noch keine Mengen erfasst.</td></tr>`;
+}
+function abgleichAuffrischen(){
+  const n=mengenNachSorte();
+  document.querySelectorAll("[data-diff]").forEach(td=>{
+    const k=td.dataset.diff, r=S.abgleich[k];
+    const d=hatZahl(r)? zahl(r)-n[k] : null;
+    td.textContent = d===null? "–" : fmt(d);
+    td.classList.toggle("abw-plus", d!==null && Math.abs(d)>0.01);
+  });
+}
+
+/* ---------- Anzeige ---------- */
+function wechseln(t){
+  aktiverTab=t;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("an",b.dataset.tab===t));
+  document.querySelectorAll(".tab").forEach(el=>el.classList.toggle("an",el.id==="tab-"+t));
+  if(t==="gewerke") gewerkeZeichnen();
+  if(t==="pruefung") pruefungZeichnen();
+  window.scrollTo(0,0); leisteZeichnen();
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>wechseln(b.dataset.tab));
+function sortiert(){ return [...S.scheine].sort((a,b)=>dSort(a).localeCompare(dSort(b))); }
+function kopfAktualisieren(){ $("bvKopf").textContent = S.kopf.bv || "Bauvorhaben eintragen"; }
+
+function zeichnen(){
+  const ges=S.scheine.reduce((a,s)=>a+zahl(s.menge),0);
+  $("mengeGesamt").textContent=fmt(ges);
+  $("anzahlScheine").textContent=S.scheine.length+(S.scheine.length===1?" Schein":" Scheine");
+  $("navAnzahl").textContent=S.scheine.length;
+  const dat=S.scheine.map(s=>s.datum).filter(Boolean).sort((a,b)=>dSort({datum:a}).localeCompare(dSort({datum:b})));
+  $("zeitraum").textContent=dat.length?(dat[0]===dat[dat.length-1]?dat[0]:dat[0]+" – "+dat[dat.length-1]):"–";
+  kopfAktualisieren();
+
+  const zaehlung={}; S.scheine.forEach(s=>{ if(s.lsnr) zaehlung[s.lsnr]=(zaehlung[s.lsnr]||0)+1; });
+  const gefiltert = sortiert().filter(s=>
+    !S.filter || (S.filter==="__ohne"? !s.bauteilId : s.gewerkId===S.filter));
+  const liste=$("scheinListe");
+  if(!S.scheine.length){
+    liste.innerHTML=`<div class="leer">Noch keine Scheine.<br>Unter „Erfassen“ scannen oder PDF einfügen.</div>`;
+  } else if(!gefiltert.length){
+    liste.innerHTML=`<div class="leer">Kein Schein in dieser Auswahl.</div>`;
+  } else {
+    liste.innerHTML = gefiltert.map(s=>{
+      const luecke = !s.lsnr||!s.datum||!hatZahl(s.menge);
+      const m=[];
+      if(!s.gelesen) m.push('<span class="marke neu">nicht ausgelesen</span>');
+      if(s.fehler) m.push('<span class="marke stopp">Auslesen fehlgeschlagen</span>');
+      if(s.gelesen&&luecke) m.push('<span class="marke">Felder fehlen</span>');
+      if(s.lsnr&&zaehlung[s.lsnr]>1) m.push('<span class="marke stopp">Nr. doppelt</span>');
+      return `<div class="stub ${luecke?"fehlt":""}">
+        <div class="rand"></div>
+        <img class="bild" src="${s.thumb||""}" alt="" onclick="detailOeffnen('${s.id}')">
+        <div class="inhalt">
+          <div onclick="detailOeffnen('${s.id}')">
+            <div class="z1"><span class="lsnr">${esc(s.lsnr||"— ohne Nr.")}</span>
+              <span class="menge">${hatZahl(s.menge)?fmt(zahl(s.menge))+" m³":"— m³"}</span></div>
+            <div class="z2">${esc([s.datum,s.uhrzeit,s.sorte].filter(Boolean).join(" · ")||"keine Daten")}</div>
+            ${m.length?`<div>${m.join("")}</div>`:""}
+          </div>
+          <select onclick="event.stopPropagation()" onchange="zuordnen('${s.id}',this.value)">
+            ${optionen(s.gewerkId,s.bauteilId,"— nicht zugeordnet —")}
+          </select>
+        </div></div>`;
+    }).join("");
+  }
+  preiseZeichnen(); gewerkSummen();
+  if(aktiverTab==="pruefung") pruefungZeichnen(); else pruefungZaehler();
+  leisteZeichnen();
+}
+function pruefungZaehler(){
+  const f=pruefen(), hoch=f.filter(x=>x.stufe==="hoch").length;
+  $("navBefunde").innerHTML = f.length? `<span class="b ${hoch?"rot":""}">${f.length}</span>` : "";
+}
+function zuordnen(sid,wert){
+  const s=S.scheine.find(x=>x.id===sid); if(!s) return;
+  const [g,b]=wert.split("|");
+  s.gewerkId=g||""; s.bauteilId=b||"";
+  speichern(); pruefungZaehler(); gewerkSummen();
+}
+
+function preiseZeichnen(){
+  const nach=mengenNachSorte(), zeilen=Object.keys(nach).sort();
+  const schl=zeilen.join("|")+"#"+zeilen.map(k=>fmt(nach[k])).join("|");
+  const tb=$("preisTabelle").querySelector("tbody");
+  if(schl!==sortenSchluessel){
+    sortenSchluessel=schl;
+    tb.innerHTML = !zeilen.length
+      ? `<tr><td colspan="4" style="color:var(--grau);border:0">Noch keine Mengen erfasst.</td></tr>`
+      : `<tr><th>Betonsorte</th><th class="r">m³</th><th class="r" style="width:88px">€/m³</th><th class="r">€</th></tr>`
+        + zeilen.map(k=>`<tr><td>${esc(k)}</td><td class="r num">${fmt(nach[k])}</td>
+          <td class="r"><input class="num" inputmode="decimal" value="${esc(S.preise[k]??"")}"
+            oninput="S.preise[${JSON.stringify(k).replace(/"/g,"&quot;")}]=this.value;preisSummen();speichern()"></td>
+          <td class="r num" data-gp="${esc(k)}">${fmt(nach[k]*zahl(S.preise[k]))}</td></tr>`).join("");
+  }
+  preisSummen();
+}
+function preisSummen(){
+  const nach=mengenNachSorte();
+  document.querySelectorAll("[data-gp]").forEach(td=>{
+    const k=td.dataset.gp; td.textContent=fmt((nach[k]||0)*zahl(S.preise[k]));
+  });
+  const netto=Object.keys(nach).reduce((a,k)=>a+nach[k]*zahl(S.preise[k]),0);
+  const satz=S.u13b?0:zahl(S.ust), ust=netto*satz/100;
+  $("summen").innerHTML =
+    `<div class="summe"><span>Netto</span><span class="num">${fmt(netto)} €</span></div>`
+    + (S.u13b? `<div class="summe"><span>Umsatzsteuer</span><span>§ 13b UStG</span></div>`
+             : `<div class="summe"><span>zzgl. ${fmt(satz,0)} % USt</span><span class="num">${fmt(ust)} €</span></div>`)
+    + `<div class="summe end"><span>Rechnungsbetrag</span><span class="num">${fmt(netto+ust)} €</span></div>`;
+}
+function gewerkSummen(){
+  const h=S.gewerke.map(g=>{
+    const sch=S.scheine.filter(s=>s.gewerkId===g.id);
+    const m=sch.reduce((a,s)=>a+zahl(s.menge),0);
+    const w=sch.reduce((a,s)=>a+zahl(s.menge)*zahl(S.preise[s.sorte||"ohne Sortenangabe"]),0);
+    return `<div class="summe"><span>${esc(g.name)} <span class="klein">${sch.length} Scheine</span></span>
+      <span class="num">${fmt(m)} m³ · ${fmt(w)} €</span></div>`;
+  }).join("");
+  const ohne=S.scheine.filter(s=>!s.gewerkId);
+  $("gewerkSummen").innerHTML = h + (ohne.length
+    ? `<div class="summe"><span style="color:var(--stopp)">ohne Gewerk</span>
+       <span class="num">${fmt(ohne.reduce((a,s)=>a+zahl(s.menge),0))} m³</span></div>` : "");
+}
+
+function leisteZeichnen(){
+  const l=$("leiste"), offen=S.scheine.filter(s=>!s.gelesen).length, n=S.scheine.length;
+  if(aktiverTab==="rechnung"||aktiverTab==="pruefung"){
+    l.innerHTML=`<button class="sek" onclick="pdfBauen()" ${n?"":"disabled"}>PDF der Scheine</button>
+      <button onclick="excelBauen()" ${n?"":"disabled"}>Excel erstellen</button>`;
+  } else if(offen){
+    l.innerHTML=`<button onclick="auslesen()">Daten auslesen (${offen})</button>`;
+  } else {
+    l.innerHTML=`<button class="sek" onclick="wechseln('pruefung')" ${n?"":"disabled"}>Prüfen</button>
+      <button onclick="wechseln('rechnung')" ${n?"":"disabled"}>Zur Rechnung</button>`;
+  }
+}
+
+function detailOeffnen(sid){
+  const s=S.scheine.find(x=>x.id===sid); if(!s) return;
+  const d=$("detail");
+  d.innerHTML=`<div class="d-kopf"><strong>${esc(s.lsnr||"Lieferschein")}</strong>
+      <button onclick="detail.close()">Schließen</button></div>
+    <div class="d-koerper">
+      <img src="${s.bild}" alt="Lieferschein">
+      <div class="feld"><label>Zuordnung</label>
+        <select onchange="zuordnen('${s.id}',this.value)">${optionen(s.gewerkId,s.bauteilId,"— nicht zugeordnet —")}</select></div>
+      ${FELDER.map(([k,l])=>`<div class="feld ${s[k]?"":"leer-wert"}"><label>${l}</label>
+        <input value="${esc(s[k]||"")}" data-k="${k}"></div>`).join("")}
+      <button class="loeschen" onclick="scheinLoeschen('${s.id}')">Diesen Schein löschen</button>
+    </div>`;
+  d.querySelectorAll("input[data-k]").forEach(i=>i.oninput=()=>{
+    s[i.dataset.k]=i.value; s.gelesen=true;
+    if(i.dataset.k==="sorte"&&i.value&&!(i.value in S.preise)) S.preise[i.value]="";
+    i.parentElement.classList.toggle("leer-wert",!i.value);
+  });
+  d.addEventListener("close",()=>{ sortenSchluessel=""; zeichnen(); if(aktiverTab==="pruefung") pruefungZeichnen(); speichern(); },{once:true});
+  d.showModal();
+}
+function scheinLoeschen(sid){
+  S.scheine=S.scheine.filter(x=>x.id!==sid);
+  idbDel(sid);
+  $("detail").close();
+}
+
+/* ---------- PDF ---------- */
+async function pdfBauen(){
+  status("PDF wird erzeugt …",0); await new Promise(r=>setTimeout(r,50));
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:"mm",format:"a4"});
+  const B=210,H=297,R=15;
+  const liste=sortiert(), ges=liste.reduce((a,s)=>a+zahl(s.menge),0);
+
+  doc.setFont("helvetica","bold"); doc.setFontSize(15);
+  doc.text("Betonlieferscheine",R,22);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  let y=30;
+  [["Bauvorhaben",S.kopf.bv],["Auftraggeber",S.kopf.ag],
+   ["Anzahl Lieferscheine",String(liste.length)],["Gesamtmenge",fmt(ges)+" m³"]]
+   .forEach(([a,b])=>{ if(b){ doc.text(a+":",R,y); doc.text(String(b),R+45,y); y+=5.5; } });
+  y+=4; doc.setDrawColor(150); doc.line(R,y,B-R,y); y+=7;
+
+  const gruppen = S.gewerke.map(g=>({name:g.name, scheine:liste.filter(s=>s.gewerkId===g.id)}))
+    .concat([{name:"Ohne Gewerk", scheine:liste.filter(s=>!s.gewerkId)}])
+    .filter(x=>x.scheine.length);
+
+  gruppen.forEach(gr=>{
+    if(y>H-32){ doc.addPage(); y=22; }
+    doc.setFont("helvetica","bold"); doc.setFontSize(11);
+    doc.text(gr.name,R,y); y+=5.5;
+    doc.setFontSize(9);
+    doc.text("Nr.",R,y); doc.text("Datum",R+30,y); doc.text("Zeit",R+52,y);
+    doc.text("Bauteil",R+66,y); doc.text("Sorte",R+112,y); doc.text("m³",B-R,y,{align:"right"});
+    doc.setFont("helvetica","normal"); y+=4.5;
+    gr.scheine.forEach(s=>{
+      if(y>H-20){ doc.addPage(); y=22; }
+      const b=bauteil(s.gewerkId,s.bauteilId);
+      doc.text(String(s.lsnr||"—").slice(0,15),R,y);
+      doc.text(String(s.datum||"—"),R+30,y);
+      doc.text(String(s.uhrzeit||"—"),R+52,y);
+      doc.text(String(b?b.name:"—").slice(0,26),R+66,y);
+      doc.text(String(s.sorte||"—").slice(0,20),R+112,y);
+      doc.text(hatZahl(s.menge)?fmt(zahl(s.menge)):"—",B-R,y,{align:"right"});
+      y+=4.5;
+    });
+    doc.setDrawColor(120); doc.line(R,y,B-R,y); y+=4.5;
+    doc.setFont("helvetica","bold");
+    doc.text("Summe "+gr.name,R,y);
+    doc.text(fmt(gr.scheine.reduce((a,s)=>a+zahl(s.menge),0))+" m³",B-R,y,{align:"right"});
+    doc.setFont("helvetica","normal"); y+=9;
+  });
+  if(y>H-16){ doc.addPage(); y=22; }
+  doc.setFont("helvetica","bold"); doc.setFontSize(11);
+  doc.text("Gesamtmenge",R,y); doc.text(fmt(ges)+" m³",B-R,y,{align:"right"});
+
+  for(const s of liste){
+    doc.addPage();
+    doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.text([s.lsnr||"ohne Nr.",s.datum,s.uhrzeit].filter(Boolean).join("   ·   "),R,13);
+    doc.setFont("helvetica","normal");
+    doc.text([s.sorte, hatZahl(s.menge)?fmt(zahl(s.menge))+" m³":null].filter(Boolean).join("   ·   "),B-R,13,{align:"right"});
+    doc.setFontSize(9); doc.setTextColor(90);
+    doc.text(pfad(s)||"ohne Zuordnung",R,18); doc.setTextColor(0);
+    const p=new Image(); p.src=s.bild;
+    await new Promise(res=>{ p.onload=res; p.onerror=res; });
+    const maxB=B-2*R, maxH=H-34;
+    const f=Math.min(maxB/(p.width||1), maxH/(p.height||1));
+    doc.addImage(s.bild,"JPEG", R+(maxB-p.width*f)/2, 23, p.width*f, p.height*f);
+  }
+  doc.save("Lieferscheine_"+(S.kopf.bv||"Beton").replace(/[^\wäöüÄÖÜß-]+/g,"_")+".pdf");
+  statusAus();
+}
+
+/* ---------- Excel ---------- */
+function excelBauen(){
+  const liste=sortiert(), nach=mengenNachSorte(), sorten=Object.keys(nach).sort();
+  const dat=liste.map(s=>s.datum).filter(Boolean);
+  const wb=XLSX.utils.book_new();
+
+  // Rechnung
+  const a=[];
+  a.push(["Rechnung Betonlieferung"]); a.push([]);
+  a.push(["Bauvorhaben",S.kopf.bv]); a.push(["Auftraggeber",S.kopf.ag]);
+  a.push(["Rechnungsnummer",S.kopf.rnr]); a.push(["Rechnungsdatum",S.kopf.rdat]);
+  a.push(["Leistungszeitraum", dat.length? dat[0]+" – "+dat[dat.length-1] : ""]);
+  a.push(["Anzahl Lieferscheine", liste.length]); a.push([]);
+  const kz=a.length+1;
+  a.push(["Pos.","Betonsorte","Menge m³","EP €/m³","Gesamt €"]);
+  sorten.forEach((k,i)=>{ const r=kz+1+i;
+    a.push([i+1,k,nach[k],zahl(S.preise[k]),{t:"n",f:`C${r}*D${r}`}]); });
+  const z1=kz+1, z2=kz+sorten.length, nz=z2+1;
+  a.push(["","Nettobetrag",{t:"n",f:`SUM(C${z1}:C${z2})`},"",{t:"n",f:`SUM(E${z1}:E${z2})`}]);
+  if(S.u13b){
+    a.push(["","Umsatzsteuer","","",0]);
+    a.push(["","Rechnungsbetrag","","",{t:"n",f:`E${nz}`}]);
+    a.push([]); a.push(["Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)."]);
+  } else {
+    a.push(["",`zzgl. ${zahl(S.ust)} % USt`,"","",{t:"n",f:`E${nz}*${zahl(S.ust)/100}`}]);
+    a.push(["","Rechnungsbetrag","","",{t:"n",f:`E${nz}+E${nz+1}`}]);
+  }
+  a.push([]); a.push(["Mengen je Gewerk"]);
+  S.gewerke.forEach(g=>a.push(["",g.name,S.scheine.filter(s=>s.gewerkId===g.id).reduce((x,s)=>x+zahl(s.menge),0)]));
+  const ohne=S.scheine.filter(s=>!s.gewerkId);
+  if(ohne.length) a.push(["","ohne Gewerk",ohne.reduce((x,s)=>x+zahl(s.menge),0)]);
+  const wsR=XLSX.utils.aoa_to_sheet(a);
+  wsR["!cols"]=[{wch:6},{wch:34},{wch:12},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsR,"Rechnung");
+
+  // Lieferscheine
+  const zaehlung={}; liste.forEach(s=>{ if(s.lsnr) zaehlung[s.lsnr]=(zaehlung[s.lsnr]||0)+1; });
+  const z=[["Lieferschein-Nr.","Datum","Uhrzeit","Gewerk","Bauteil","Betonsorte","Expositionsklassen",
+    "Konsistenz","Größtkorn","Menge m³","Lieferwerk","Fahrzeug","Bauteil laut Schein","Bemerkung","Status"]];
+  liste.forEach(s=>{
+    const g=gewerk(s.gewerkId), b=bauteil(s.gewerkId,s.bauteilId), h=[];
+    if(!s.lsnr) h.push("Nr. fehlt"); if(!s.datum) h.push("Datum fehlt");
+    if(!s.uhrzeit) h.push("Uhrzeit fehlt"); if(!hatZahl(s.menge)) h.push("Menge fehlt");
+    if(!s.bauteilId) h.push("Bauteil fehlt");
+    if(s.lsnr&&zaehlung[s.lsnr]>1) h.push("Nr. doppelt");
+    z.push([s.lsnr,s.datum,s.uhrzeit,g?g.name:"",b?b.name:"",s.sorte,s.expo,s.konsistenz,s.korn,
+      hatZahl(s.menge)?zahl(s.menge):"",s.werk,s.fahrzeug,s.bauteil,s.bemerkung,
+      h.length? "prüfen: "+h.join(", ") : "vollständig"]);
+  });
+  z.push([]);
+  z.push(["","","","","","","","","Summe",{t:"n",f:`SUM(J2:J${liste.length+1})`}]);
+  const wsL=XLSX.utils.aoa_to_sheet(z);
+  wsL["!cols"]=[{wch:18},{wch:11},{wch:8},{wch:16},{wch:24},{wch:20},{wch:16},{wch:11},{wch:10},
+    {wch:10},{wch:20},{wch:14},{wch:22},{wch:24},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,wsL,"Lieferscheine");
+
+  // Soll-Ist
+  const si=[["Gewerk","Bauteil","Soll m³","Ist m³","Abweichung m³","Abweichung %","Soll-Betonsorte"]];
+  S.gewerke.forEach(g=>g.bauteile.forEach(b=>{
+    const ist=S.scheine.filter(s=>s.bauteilId===b.id).reduce((x,s)=>x+zahl(s.menge),0);
+    const soll=hatZahl(b.soll)?zahl(b.soll):"";
+    const r=si.length+1;
+    si.push([g.name,b.name,soll,ist,
+      soll!==""?{t:"n",f:`D${r}-C${r}`}:"", soll?{t:"n",f:`(D${r}-C${r})/C${r}`}:"", b.sorte]);
+  }));
+  const wsS=XLSX.utils.aoa_to_sheet(si);
+  wsS["!cols"]=[{wch:16},{wch:26},{wch:10},{wch:10},{wch:14},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,wsS,"Soll-Ist");
+
+  // Prüfprotokoll
+  const p=[["Stufe","Feststellung","Erläuterung","Bezug"]];
+  pruefen().forEach(x=>p.push([
+    x.stufe==="hoch"?"hoch":x.stufe==="mittel"?"mittel":"Hinweis", x.kopf, x.txt, x.bezug||""]));
+  if(p.length===1) p.push(["","Keine Auffälligkeiten","",""]);
+  const wsP=XLSX.utils.aoa_to_sheet(p);
+  wsP["!cols"]=[{wch:9},{wch:32},{wch:76},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,wsP,"Prüfung");
+
+  XLSX.writeFile(wb,"Beton_"+(S.kopf.bv||"Abrechnung").replace(/[^\wäöüÄÖÜß-]+/g,"_")+".xlsx");
+}
+
+/* ---------- Start ---------- */
+["bv","ag","rnr","rdat"].forEach(k=>$("f_"+k).oninput=e=>{ S.kopf[k]=e.target.value; kopfAktualisieren(); speichern(); });
+$("f_ust").oninput=e=>{ S.ust=e.target.value; preisSummen(); speichern(); };
+$("f_13b").onchange=e=>{ S.u13b=e.target.checked; preisSummen(); speichern(); };
+["tol","lueck","maxm"].forEach(k=>$("p_"+k).oninput=e=>{ S.param[k]=e.target.value; speichern(); pruefungZaehler(); });
+$("zielGewerk").onchange=e=>{ S.ziel.g=e.target.value; S.ziel.b=""; auswahlenFuellen(); speichern(); };
+$("zielBauteil").onchange=e=>{ S.ziel.b=e.target.value; zielText(); speichern(); };
+$("filterGewerk").onchange=e=>{ S.filter=e.target.value; zeichnen(); speichern(); };
+
+$("f_key").oninput=e=>{ API_KEY=e.target.value.trim(); localStorage.setItem("bl_key",API_KEY); };
+
+(async()=>{
+  await laden();
+  $("f_key").value=API_KEY;
+  ["bv","ag","rnr","rdat"].forEach(k=>$("f_"+k).value=S.kopf[k]||"");
+  $("f_ust").value=S.ust; $("f_13b").checked=S.u13b;
+  ["tol","lueck","maxm"].forEach(k=>$("p_"+k).value=S.param[k]);
+  auswahlenFuellen(); gewerkeZeichnen(); zeichnen();
+})();
+</script>
